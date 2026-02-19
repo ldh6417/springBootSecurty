@@ -3,6 +3,7 @@ package com.zeus.controller;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -21,5 +22,11 @@ public class LoginController {
 			model.addAttribute("logout", "로그아웃!!!");
 		}
 		return "loginForm";
+	}
+
+	@RequestMapping("/logout")
+	public String logoutForm() {
+		log.info("logoutForm");
+		return "logoutForm";
 	}
 }
