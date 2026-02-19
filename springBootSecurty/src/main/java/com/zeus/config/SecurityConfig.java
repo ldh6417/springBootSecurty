@@ -9,9 +9,12 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.AccessDeniedHandler;
+import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 
 import com.zeus.common.securty.CustomAccessDeniedHandler;
+import com.zeus.common.securty.CustomLoginSuccessHandler;
 
+import jakarta.servlet.DispatcherType;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -27,7 +30,10 @@ public class SecurityConfig {
 		httpSecurity.csrf((csrf) -> csrf.disable());
 
 		// 2.인가정책
-		httpSecurity.authorizeHttpRequests(auth -> auth.requestMatchers("/board/list").permitAll() // 게시판 목록: 누구나
+		httpSecurity.authorizeHttpRequests(auth -> auth
+                .dispatcherTypeMatchers(DispatcherType.FORWARD).permitAll()
+                .requestMatchers("/accessError", "/login", "/css/", "/js/", "/error").permitAll()
+				.requestMatchers("/board/list").permitAll() // 게시판 목록: 누구나
 				.requestMatchers("/board/register").hasRole("MEMBER") // 게시판 등록: 회원만
 				.requestMatchers("/notice/list").permitAll() // 공지사항 목록: 누구나
 				.requestMatchers("/notice/register").hasRole("ADMIN") // 공지사항 등록: 관리자만
@@ -42,7 +48,13 @@ public class SecurityConfig {
 		httpSecurity.exceptionHandling(exception -> exception.accessDeniedHandler(createAccessDeniedHandler()));
 
 		// 4.기본폼 로그인을 활성화
-		httpSecurity.formLogin(Customizer.withDefaults());
+		// httpSecurity.formLogin(Customizer.withDefaults());
+		httpSecurity.formLogin(form -> form.loginPage("/login") // 커스텀 로그인 페이지 URL
+				.loginProcessingUrl("/login")
+				//.defaultSuccessUrl("/board/list")  //성공시 기본 화면 설정 
+				.successHandler(createAuthenticationSuccessHandler())
+				.permitAll() // 로그인 페이지는 누구나 접근 가능해야 함
+		);
 
 		return httpSecurity.build();
 	}
@@ -54,11 +66,14 @@ public class SecurityConfig {
 
 		auth.inMemoryAuthentication().withUser("admin").password("{noop}1234").roles("ADMIN", "MEMBER");
 	}
-	
-	//3. 접근거부시 예외처리를 설정을 클래스로 이동한다.
-	@Bean 
-	public AccessDeniedHandler createAccessDeniedHandler() { 
-	return new CustomAccessDeniedHandler();
-	} 
 
+	// 3. 접근거부시 예외처리를 설정을 클래스로 이동한다.
+	@Bean
+	public AccessDeniedHandler createAccessDeniedHandler() {
+		return new CustomAccessDeniedHandler();
+	}
+	public AuthenticationSuccessHandler createAuthenticationSuccessHandler() { 
+		  return new CustomLoginSuccessHandler();
+	}
 }
+
